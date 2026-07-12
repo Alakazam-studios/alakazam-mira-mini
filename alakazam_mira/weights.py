@@ -17,7 +17,7 @@ import tarfile
 import urllib.request
 from pathlib import Path
 
-DEFAULT_REPO = os.environ.get("MIRA_HF_REPO", "alakazamworld/mira-mini-local")
+DEFAULT_REPO = os.environ.get("MIRA_HF_REPO", "alakazamworld/mira-mini")
 CACHE = Path(os.environ.get("MIRA_HOME", Path.home() / ".cache" / "alakazam-mira"))
 
 
