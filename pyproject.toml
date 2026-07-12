@@ -1,0 +1,35 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "alakazam-mira"
+version = "0.1.0"
+description = "Play MIRA — a neural world model of car soccer — locally on your own GPU (CUDA, Apple Silicon)."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+dependencies = [
+  "torch>=2.6",
+  "fastapi>=0.110",
+  "uvicorn[standard]>=0.27",
+  "websockets>=12",
+  "huggingface_hub>=0.23",
+  "numpy",
+  "pillow",
+  "opencv-python-headless>=4.9",
+  "einops>=0.8",
+  "omegaconf>=2.3",
+  "pydantic>=2.7",
+  "torchmetrics",
+  "termcolor",
+  "tqdm",
+  # our mira fork with the inference/runtime fixes (public repo; pinned)
+  # "mira @ git+https://github.com/Alakazam-studios/mira@psd-warmstart",
+]
+
+[project.scripts]
+mira = "alakazam_mira.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["alakazam_mira"]

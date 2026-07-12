@@ -1,0 +1,5 @@
+_stage/
+dist/
+__pycache__/
+*.whl
+.venv/
