@@ -1,4 +1,4 @@
-"""`mira play` — run the MIRA world model locally, one command.
+"""`mira-mini play`: run the MIRA Mini world model locally, one command.
 
 Wires three existing pieces into one process on one port:
   1. the GPU engine (mira_vm.app: FastAPI + WS, device auto-detected cuda -> mps -> cpu)
@@ -30,10 +30,13 @@ def _pick_device() -> str:
 
 
 def main() -> None:
-    ap = argparse.ArgumentParser(prog="mira")
+    ap = argparse.ArgumentParser(prog="mira-mini")
     sub = ap.add_subparsers(dest="cmd")
     play = sub.add_parser("play", help="download weights (first run) and play locally")
     play.add_argument("--port", type=int, default=8770)
+    play.add_argument("--model", choices=["auto", "1b", "364m"], default="auto",
+                      help="which weights to run: 1b (needs a real GPU), 364m (laptop tier), "
+                           "or auto (CUDA -> 1b, Apple/CPU -> 364m)")
     play.add_argument("--steps", type=int, default=None,
                       help="override default diffusion steps (else the lobby preset decides)")
     play.add_argument("--no-browser", action="store_true")
@@ -59,14 +62,22 @@ def main() -> None:
 
     device = _pick_device()
     if device == "cpu":
-        print("[mira] no GPU found (need CUDA or Apple Silicon). CPU is too slow to be fun — aborting.")
-        print("       Override with MIRA_DEVICE=cpu if you really want to watch a slideshow.")
+        print("[mira-mini] no GPU found (need CUDA or Apple silicon); CPU generation is too slow to play. Aborting.")
+        print("       Override with MIRA_DEVICE=cpu to run anyway.")
         sys.exit(2)
-    print(f"[mira] device: {device}")
 
-    from .weights import checkpoint_path, ensure_weights
+    from .weights import CACHE, bundle_ready, checkpoint_path, ensure_weights, resolve_repo
 
-    bundle = ensure_weights()
+    repo = resolve_repo(args.model, device)
+    size = "~5 GB" if repo.endswith("364m") else "~12 GB"
+    first_run = not bundle_ready(CACHE / "bundle")
+    print()
+    print("  mira-mini: MIRA Mini, a neural world model of car soccer, running locally")
+    print(f"  device {device} · model {repo.split('/')[-1]}"
+          + (f" · first run downloads {size} of weights (once)" if first_run else " · weights cached"))
+    print("  weights are CC BY-NC-SA (non-commercial) · docs: https://alakazam.gg/mira")
+    print()
+    bundle = ensure_weights(repo)
     ckpt = checkpoint_path(bundle)
 
     # Engine env (read by mira_vm.engine / mira_vm.app at import).
@@ -85,7 +96,7 @@ def main() -> None:
     from .local_app import build_app
 
     # Engine server (its own port; the relay's broker dials it over loopback exactly like
-    # it dials Modal in production — zero protocol drift between cloud and local).
+    # it dials Modal in production; zero protocol drift between cloud and local).
     from mira_vm.app import app as engine_app
 
     eng_cfg = uvicorn.Config(engine_app, host="127.0.0.1", port=engine_port, log_level="warning")
@@ -94,7 +105,8 @@ def main() -> None:
 
     app = build_app()
     url = f"http://127.0.0.1:{args.port}/?view=rocket"
-    print(f"[mira] starting — {url}")
+    print(f"[mira-mini] playing at {url}")
+    print("[mira-mini] drive with WASD · Space toggles ball-cam · full controls in the player")
     if not args.no_browser:
         threading.Thread(
             target=lambda: (time.sleep(1.5), webbrowser.open(url)), daemon=True

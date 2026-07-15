@@ -3,9 +3,9 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "alakazam-mira"
-version = "0.1.0"
-description = "Play MIRA — a neural world model of car soccer — locally on your own GPU (CUDA, Apple Silicon)."
+name = "alakazam-mira-mini"
+version = "0.1.1"
+description = "Play MIRA Mini, a neural world model of car soccer, locally on your own GPU (CUDA or Apple silicon)."
 readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "MIT" }
@@ -28,8 +28,37 @@ dependencies = [
   # "mira @ git+https://github.com/Alakazam-studios/mira@psd-warmstart",
 ]
 
+[project.urls]
+Homepage = "https://alakazam.gg/mira"
+"Technical report" = "https://alakazam.gg/mira"
+"Weights (Hugging Face)" = "https://huggingface.co/alakazamworld"
+Upstream = "https://github.com/mira-wm/mira"
+
 [project.scripts]
-mira = "alakazam_mira.cli:main"
+mira-mini = "alakazam_mira.cli:main"
+
+[tool.hatch.build]
+# Slim the wheel to what the local player serves (PyPI hard limit is 100 MB/file).
+# Static reachability scan from embed.html (2026-07-13): ort-wasm blobs, models/, init/,
+# characters/ are UNREACHABLE; stormcaller/halverson/matrix/backrooms etc. are other
+# worlds' media named by the shared platform chunks but never fetched by the mira player.
+exclude = [
+  "alakazam_mira/ui/assets/*.wasm",
+  "alakazam_mira/ui/models",
+  "alakazam_mira/ui/init",
+  "alakazam_mira/ui/characters",
+  "alakazam_mira/ui/stormcaller_tutorial",
+  "alakazam_mira/ui/stormcaller_wyrm",
+  "alakazam_mira/ui/halverson",
+  "alakazam_mira/ui/matrix",
+  "alakazam_mira/ui/backrooms",
+  "alakazam_mira/ui/wonnx",
+  "alakazam_mira/ui/evolution_walk",
+  "alakazam_mira/ui/dreamx",
+  "alakazam_mira/ui/brand",
+  "alakazam_mira/ui/thumbnails",
+  "alakazam_mira/ui/myst-seed.png",
+]
 
 [tool.hatch.build.targets.wheel]
 packages = ["alakazam_mira"]

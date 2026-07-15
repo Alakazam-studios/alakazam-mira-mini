@@ -17,8 +17,22 @@ import tarfile
 import urllib.request
 from pathlib import Path
 
-DEFAULT_REPO = os.environ.get("MIRA_HF_REPO", "alakazamworld/mira-mini")
+MODEL_REPOS = {
+    "1b": "alakazamworld/mira-mini",        # 1B single-player; needs a discrete GPU
+    "364m": "alakazamworld/mira-mini-364m",  # laptop tier; MLX/Core ML path
+}
 CACHE = Path(os.environ.get("MIRA_HOME", Path.home() / ".cache" / "alakazam-mira"))
+
+
+def resolve_repo(model: str | None, device: str | None) -> str:
+    """Pick the weight repo: explicit --model > MIRA_HF_REPO env > device-aware default
+    (CUDA machines get the 1B; Apple silicon / CPU get the 364M laptop tier)."""
+    if model and model != "auto":
+        return MODEL_REPOS[model]
+    env = os.environ.get("MIRA_HF_REPO")
+    if env:
+        return env
+    return MODEL_REPOS["1b"] if device == "cuda" else MODEL_REPOS["364m"]
 
 
 def _find_ckpt(root: Path) -> Path | None:
@@ -34,8 +48,9 @@ def bundle_ready(root: Path) -> bool:
     )
 
 
-def ensure_weights() -> Path:
-    """Return the local bundle dir, downloading it on first run."""
+def ensure_weights(repo: str | None = None) -> Path:
+    """Return the local bundle dir for `repo`, downloading it on first run."""
+    repo = repo or resolve_repo(None, None)
     root = CACHE / "bundle"
     if bundle_ready(root):
         _localize_config(root)
@@ -44,7 +59,7 @@ def ensure_weights() -> Path:
 
     tar_url = os.environ.get("MIRA_BUNDLE_URL")
     if tar_url:
-        print("[mira] downloading weights bundle (direct URL) ...")
+        print("[mira-mini] downloading weights bundle (direct URL) ...")
         tar_path = CACHE / "bundle.tar"
         _download(tar_url, tar_path)
         with tarfile.open(tar_path) as tf:
@@ -55,15 +70,31 @@ def ensure_weights() -> Path:
                 d.rename(root) if not root.exists() else None
         tar_path.unlink(missing_ok=True)
     else:
-        print(f"[mira] downloading weights from Hugging Face ({DEFAULT_REPO}) ...")
+        print(f"[mira-mini] downloading weights from Hugging Face ({repo}) ...")
         from huggingface_hub import snapshot_download
+        from huggingface_hub.errors import GatedRepoError, HfHubHTTPError, RepositoryNotFoundError
 
-        local = snapshot_download(DEFAULT_REPO)
+        try:
+            local = snapshot_download(repo)
+        except (GatedRepoError, RepositoryNotFoundError) as e:
+            raise SystemExit(
+                f"[mira-mini] the weights ({repo}) are not public yet; they unlock at launch.\n"
+                "       Watch https://alakazam.gg/mira for the date. If you DO have access, run\n"
+                "       `hf auth login` first, then retry."
+            ) from e
+        except HfHubHTTPError as e:
+            code = getattr(getattr(e, "response", None), "status_code", None)
+            if code in (401, 403):
+                raise SystemExit(
+                    f"[mira-mini] no access to {repo} (HTTP {code}); the weights unlock at launch.\n"
+                    "       If you have access: `hf auth login`, then retry."
+                ) from e
+            raise
         root = Path(local)
 
     if not bundle_ready(root):
         raise SystemExit(
-            f"[mira] weight bundle incomplete at {root} — delete it and retry, or set MIRA_BUNDLE_URL"
+            f"[mira-mini] weight bundle incomplete at {root}; delete it and retry, or set MIRA_BUNDLE_URL"
         )
     _localize_config(root)
     return root
@@ -81,7 +112,7 @@ def _download(url: str, dest: Path) -> None:
             f.write(chunk)
             done += len(chunk)
             if total:
-                print(f"\r[mira] {done / 1e9:.2f} / {total / 1e9:.2f} GB", end="", flush=True)
+                print(f"\r[mira-mini] {done / 1e9:.2f} / {total / 1e9:.2f} GB", end="", flush=True)
     print()
     tmp.rename(dest)
 

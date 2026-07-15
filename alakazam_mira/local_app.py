@@ -18,6 +18,6 @@ def build_app() -> FastAPI:
 
     app.include_router(rocket_router)  # router already carries /api/rocket
 
-    assert UI_DIR.is_dir(), f"UI bundle missing at {UI_DIR} — build with scripts/build_local_pkg.sh"
+    assert UI_DIR.is_dir(), f"UI bundle missing at {UI_DIR}; build with scripts/build_local_pkg.sh"
     app.mount("/", StaticFiles(directory=UI_DIR, html=True), name="ui")
     return app
