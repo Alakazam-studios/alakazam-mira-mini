@@ -75,7 +75,7 @@ def main() -> None:
     print("  mira-mini: MIRA Mini, a neural world model of car soccer, running locally")
     print(f"  device {device} · model {repo.split('/')[-1]}"
           + (f" · first run downloads {size} of weights (once)" if first_run else " · weights cached"))
-    print("  weights are CC BY-NC-SA (non-commercial) · docs: https://alakazam.gg/mira")
+    print("  weights are CC BY-NC-SA (non-commercial) · docs: https://alakazam.gg/mira-mini")
     print()
     bundle = ensure_weights(repo)
     ckpt = checkpoint_path(bundle)

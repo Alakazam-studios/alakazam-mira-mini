@@ -29,8 +29,8 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://alakazam.gg/mira"
-"Technical report" = "https://alakazam.gg/mira"
+Homepage = "https://alakazam.gg/mira-mini"
+"Technical report" = "https://alakazam.gg/mira-mini"
 "Weights (Hugging Face)" = "https://huggingface.co/alakazamworld"
 Upstream = "https://github.com/mira-wm/mira"
 

@@ -79,7 +79,7 @@ def ensure_weights(repo: str | None = None) -> Path:
         except (GatedRepoError, RepositoryNotFoundError) as e:
             raise SystemExit(
                 f"[mira-mini] the weights ({repo}) are not public yet; they unlock at launch.\n"
-                "       Watch https://alakazam.gg/mira for the date. If you DO have access, run\n"
+                "       Watch https://alakazam.gg/mira-mini for the date. If you DO have access, run\n"
                 "       `hf auth login` first, then retry."
             ) from e
         except HfHubHTTPError as e:

@@ -13,7 +13,7 @@ MIRA Mini is our from-scratch reproduction of the MIRA recipe
 ([General Intuition](https://www.generalintuition.com/) × [Kyutai](https://kyutai.org/),
 with Epic Games), compressed until it runs on consumer hardware: fewer diffusion steps,
 a smaller student model, and a compact decoder. Measurements and method are in the
-[technical report](https://alakazam.gg/mira).
+[technical report](https://alakazam.gg/mira-mini).
 
 ## What you need
 
@@ -62,4 +62,6 @@ physics.
 
 The architecture, training recipe, and dataset are General Intuition's and Kyutai's,
 released openly with Epic Games ([mira-wm/mira](https://github.com/mira-wm/mira)).
-MIRA Mini is Alakazam's independent reproduction and compression of that work.
+MIRA Mini is Alakazam's independent reproduction and compression of that work. The
+weights are an independent release by Alakazam: not released by, associated with, or
+endorsed by General Intuition, Kyutai, or Epic Games.
