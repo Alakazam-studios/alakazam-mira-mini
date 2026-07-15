@@ -21,8 +21,9 @@ a smaller student model, and a compact decoder. Measurements and method are in t
   are not supported; generation is too slow to play.
 - Disk for the weights, downloaded once from Hugging Face: ~5 GB for the 364M model,
   ~12 GB for the 1B.
-- The weight repositories unlock at launch; until then the command exits with a note. If
-  you have access, run `hf auth login` first.
+- The weight repositories are public on Hugging Face
+  ([alakazamworld](https://huggingface.co/alakazamworld)); the first run downloads them
+  automatically.
 
 ## Picking a model
 
