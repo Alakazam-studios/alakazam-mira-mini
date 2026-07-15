@@ -3,4 +3,4 @@ dist/
 __pycache__/
 *.whl
 .venv/
-alakazam_mira/ui/
+alakazam_mira/ui
