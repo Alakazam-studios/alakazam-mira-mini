@@ -4,13 +4,14 @@ build-backend = "hatchling.build"
 
 [project]
 name = "alakazam-mira-mini"
-version = "0.1.2"
+version = "0.1.3"
 description = "Play MIRA Mini, a neural world model of car soccer, locally on your own GPU (CUDA or Apple silicon)."
 readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "MIT" }
 dependencies = [
   "torch>=2.6",
+  "torchvision",
   "fastapi>=0.110",
   "uvicorn[standard]>=0.27",
   "websockets>=12",
@@ -22,6 +23,7 @@ dependencies = [
   "omegaconf>=2.3",
   "pydantic>=2.7",
   "torchmetrics",
+  "hydra-core>=1.3",
   "termcolor",
   "tqdm",
   # our mira fork with the inference/runtime fixes (public repo; pinned)
@@ -61,4 +63,5 @@ exclude = [
 ]
 
 [tool.hatch.build.targets.wheel]
-packages = ["alakazam_mira"]
+packages = ["alakazam_mira", "mira_vm", "server", "mira", "wm_transport"]
+artifacts = ["alakazam_mira/ui"]

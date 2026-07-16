@@ -65,3 +65,8 @@ released openly with Epic Games ([mira-wm/mira](https://github.com/mira-wm/mira)
 MIRA Mini is Alakazam's independent reproduction and compression of that work. The
 weights are an independent release by Alakazam: not released by, associated with, or
 endorsed by General Intuition, Kyutai, or Epic Games.
+
+
+## 0.1.3
+
+Packaging fix: the 0.1.1 and 0.1.2 wheels were missing the vendored engine (`mira_vm`), the room relay, and the `mira` inference runtime, so `mira-mini play` crashed with ModuleNotFoundError after downloading weights. 0.1.3 ships all of them plus the previously undeclared torchvision dependency. Wheels are assembled from a staging tree; this repo carries the CLI source and package metadata.
