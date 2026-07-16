@@ -4,3 +4,5 @@ __pycache__/
 *.whl
 .venv/
 alakazam_mira/ui
+runs/
+data/
