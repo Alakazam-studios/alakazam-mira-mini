@@ -82,3 +82,7 @@ The access-key bypass now targets the store the UI actually reads (sessionStorag
 ## 0.1.6
 
 The Apple fast stack is now automatic: on a Mac with the 364m bundle, `mira-mini play` wires the MLX transformer (whole-step compiled), the Core ML decoder (pipelined in a child process), and 2x display interpolation, roughly doubling the delivered frame rate; `--no-fast` restores plain torch. The CLI shows staged loading and opens the browser only when the model is ready, and the room switches to the play screen only after the first generated frame arrives. Best served by python 3.12 (coremltools has no 3.13+ bindings yet; without them the fast stack silently falls back to torch).
+
+## 0.1.7
+
+The play URL is a clickable terminal hyperlink (OSC 8).

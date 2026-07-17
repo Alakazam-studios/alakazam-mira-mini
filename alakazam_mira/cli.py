@@ -178,7 +178,8 @@ def main() -> None:
             if h.get("ready"):
                 print(f"  \033[32m●\033[0m engine   \033[1mready in {waited:.0f}s\033[0m")
                 print()
-                print(f"  \033[1m▶ {url}\033[0m")
+                link = f"\033]8;;{url}\033\\{url}\033]8;;\033\\"
+                print(f"  \033[1m▶ {link}\033[0m  \033[2m(click it)\033[0m")
                 print("    drive with WASD · Space toggles ball-cam · Ctrl-C here to quit")
                 print()
                 if not args.no_browser:
