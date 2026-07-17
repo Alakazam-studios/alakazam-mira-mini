@@ -86,3 +86,7 @@ The Apple fast stack is now automatic: on a Mac with the 364m bundle, `mira-mini
 ## 0.1.7
 
 The play URL is a clickable terminal hyperlink (OSC 8).
+
+## 0.1.8
+
+The room start handshake retries with backoff instead of failing once when the engine slot is briefly held by a previous session or an idle-closed socket.
