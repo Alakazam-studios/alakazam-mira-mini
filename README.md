@@ -94,3 +94,7 @@ The room start handshake retries with backoff instead of failing once when the e
 ## 0.1.9
 
 The banner shows the installed version.
+
+## 0.1.10
+
+Animated loading spinner with elapsed time; engine logs are hidden by default (`--verbose` restores them).

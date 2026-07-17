@@ -42,6 +42,8 @@ def main() -> None:
     play.add_argument("--no-browser", action="store_true")
     play.add_argument("--no-fast", action="store_true",
                       help="disable the Apple fast stack (MLX + Core ML) and run plain torch")
+    play.add_argument("--verbose", action="store_true",
+                      help="show engine/runtime INFO logs (hidden by default)")
     args = ap.parse_args()
     if args.cmd != "play":
         ap.print_help()
@@ -138,8 +140,13 @@ def main() -> None:
     os.environ["MIRA_MODAL_URL"] = f"ws://127.0.0.1:{engine_port}/ws"
 
     import logging as _logging
-    for noisy in ("httpx", "uvicorn.access"):
-        _logging.getLogger(noisy).setLevel(_logging.WARNING)
+    noisy = ["httpx", "uvicorn.access"]
+    if not args.verbose:
+        noisy += ["mira-engine", "mira-vm", "mira_vm.coreml_decoder",
+                  "mira.codec.dino", "server.rocket_league.api",
+                  "server.rocket_league.broker", "coremltools"]
+    for name in noisy:
+        _logging.getLogger(name).setLevel(_logging.WARNING)
     import uvicorn
 
     from .local_app import build_app
@@ -168,19 +175,28 @@ def main() -> None:
             "compiling dreams for your GPU…",
             "the referee is a neural net too; do not argue with it…",
         ]
-        t0 = time.time(); qi = 0; last_quip = 0.0
+        t0 = time.time(); qi = 0
+        spin = "⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏"
+        tty = sys.stdout.isatty()
+        si = 0
+        last_h = 0.0
+        h = {}
         while True:
-            time.sleep(0.4)
+            time.sleep(0.1 if tty else 0.5)
             waited = time.time() - t0
-            try:
-                with _rq.urlopen(f"http://127.0.0.1:{engine_port}/healthz", timeout=2) as r:
-                    h = _json.load(r)
-            except Exception:
-                h = {}
+            if waited - last_h > 0.5:
+                last_h = waited
+                try:
+                    with _rq.urlopen(f"http://127.0.0.1:{engine_port}/healthz", timeout=2) as r:
+                        h = _json.load(r)
+                except Exception:
+                    h = {}
             if h.get("load_error"):
+                if tty: print("\r\033[2K", end="")
                 print(f"  ✗ engine failed: {h['load_error']}", flush=True)
                 return
             if h.get("ready"):
+                if tty: print("\r\033[2K", end="")
                 print(f"  \033[32m●\033[0m engine   \033[1mready in {waited:.0f}s\033[0m")
                 print()
                 link = f"\033]8;;{url}\033\\{url}\033]8;;\033\\"
@@ -190,14 +206,21 @@ def main() -> None:
                 if not args.no_browser:
                     webbrowser.open(url)
                 return
-            if waited - last_quip > 9 and qi < len(quips):
-                print(f"  \033[2m  {quips[qi]}\033[0m", flush=True)
-                qi += 1; last_quip = waited
+            quip = quips[min(int(waited // 9), len(quips) - 1)]
+            if tty:
+                si = (si + 1) % len(spin)
+                print(f"\r\033[2K  \033[38;5;208m{spin[si]}\033[0m engine   loading… "
+                      f"\033[1m{waited:.0f}s\033[0m  \033[2m{quip}\033[0m", end="", flush=True)
+            elif int(waited) % 10 == 0 and qi <= int(waited // 9):
+                qi = int(waited // 9) + 1
+                print(f"    …{waited:.0f}s  {quip}", flush=True)
             if waited > 300:
+                if tty: print("\r\033[2K", end="")
                 print("  ✗ engine took >5 min; something is wrong (check RAM, then rerun)")
                 return
 
-    print("  ● engine   loading…  \033[2m(~30 s on Apple silicon; watch this space)\033[0m", flush=True)
+    if not args.verbose:
+        print("  \033[2m(engine logs hidden; rerun with --verbose to see them)\033[0m", flush=True)
     threading.Thread(target=_watch_and_open, daemon=True, name="load-watcher").start()
     uvicorn.run(app, host="127.0.0.1", port=args.port, log_level="warning")
 
