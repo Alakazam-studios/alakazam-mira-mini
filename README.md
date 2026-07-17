@@ -70,3 +70,7 @@ endorsed by General Intuition, Kyutai, or Epic Games.
 ## 0.1.3
 
 Packaging fix: the 0.1.1 and 0.1.2 wheels were missing the vendored engine (`mira_vm`), the room relay, and the `mira` inference runtime, so `mira-mini play` crashed with ModuleNotFoundError after downloading weights. 0.1.3 ships all of them plus the previously undeclared torchvision dependency. Wheels are assembled from a staging tree; this repo carries the CLI source and package metadata.
+
+## 0.1.4
+
+Local-play polish from a live rehearsal: the access-key prompt no longer appears (the local relay never checked it; the page now pre-seeds it), and few-step bundles (364m, psd) default to 2 diffusion steps via the engine's hard override, so `mira-mini play` hits its rated frame rate without flags.

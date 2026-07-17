@@ -19,5 +19,17 @@ def build_app() -> FastAPI:
     app.include_router(rocket_router)  # router already carries /api/rocket
 
     assert UI_DIR.is_dir(), f"UI bundle missing at {UI_DIR}; build with scripts/build_local_pkg.sh"
+    from fastapi.responses import HTMLResponse
+
+    # The platform UI gates room creation on localStorage['rocket_access_key'].
+    # The local relay never checks a key (_check_access is a no-op with
+    # ROCKET_ACCESS_KEY unset), so pre-seed it and the prompt never appears.
+    _inject = "<script>try{localStorage.setItem('rocket_access_key','local')}catch(e){}</script>"
+
+    @app.get("/", include_in_schema=False)
+    def _index():
+        html = (UI_DIR / "index.html").read_text()
+        return HTMLResponse(html.replace("<head>", "<head>" + _inject, 1))
+
     app.mount("/", StaticFiles(directory=UI_DIR, html=True), name="ui")
     return app

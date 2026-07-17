@@ -85,8 +85,12 @@ def main() -> None:
     os.environ.setdefault("MIRA_DEVICE", device)
     os.environ.setdefault("MIRA_CONTEXT_PATH", str(bundle / "context" / "default.npz"))
     os.environ.setdefault("MIRA_WARMUP_STEPS", "0")  # no CUDA graphs locally; skip warmup session
-    if args.steps:
-        os.environ["MIRA_N_DIFFUSION_STEPS"] = str(args.steps)
+    # Few-step distillates (364m student, psd) run at 2 steps; the lobby preset
+    # sends 8, so use the hard override the engine honors over session rules.
+    steps = args.steps or (2 if ("364m" in repo or "psd" in repo) else None)
+    if steps:
+        os.environ["MIRA_FORCE_STEPS"] = str(steps)
+        os.environ["MIRA_N_DIFFUSION_STEPS"] = str(steps)
     # Relay env: talk to the in-process engine over loopback.
     engine_port = args.port + 1
     os.environ["MIRA_MODAL_URL"] = f"ws://127.0.0.1:{engine_port}/ws"
