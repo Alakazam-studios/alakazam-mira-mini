@@ -69,8 +69,16 @@ endorsed by General Intuition, Kyutai, or Epic Games.
 
 ## 0.1.3
 
-Packaging fix: the 0.1.1 and 0.1.2 wheels were missing the vendored engine (`mira_vm`), the room relay, and the `mira` inference runtime, so `mira-mini play` crashed with ModuleNotFoundError after downloading weights. 0.1.3 ships all of them plus the previously undeclared torchvision dependency. Wheels are assembled from a staging tree; this repo carries the CLI source and package metadata.
+Packaging fix: 0.1.1 and 0.1.2 wheels were missing the engine (`mira_vm`), the room relay, and the vendored `mira` inference runtime, so `mira-mini play` crashed with ModuleNotFoundError after downloading weights. 0.1.3 ships all of them. Thanks to the first player who reported it.
 
 ## 0.1.4
 
 Local-play polish from a live rehearsal: the access-key prompt no longer appears (the local relay never checked it; the page now pre-seeds it), and few-step bundles (364m, psd) default to 2 diffusion steps via the engine's hard override, so `mira-mini play` hits its rated frame rate without flags.
+
+## 0.1.5
+
+The access-key bypass now targets the store the UI actually reads (sessionStorage) and the play URL carries `key=local`, so the prompt is gone on every browser and cache state.
+
+## 0.1.6
+
+The Apple fast stack is now automatic: on a Mac with the 364m bundle, `mira-mini play` wires the MLX transformer (whole-step compiled), the Core ML decoder (pipelined in a child process), and 2x display interpolation, roughly doubling the delivered frame rate; `--no-fast` restores plain torch. The CLI shows staged loading and opens the browser only when the model is ready, and the room switches to the play screen only after the first generated frame arrives. Best served by python 3.12 (coremltools has no 3.13+ bindings yet; without them the fast stack silently falls back to torch).

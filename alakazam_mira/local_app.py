@@ -24,7 +24,7 @@ def build_app() -> FastAPI:
     # The platform UI gates room creation on localStorage['rocket_access_key'].
     # The local relay never checks a key (_check_access is a no-op with
     # ROCKET_ACCESS_KEY unset), so pre-seed it and the prompt never appears.
-    _inject = "<script>try{localStorage.setItem('rocket_access_key','local')}catch(e){}</script>"
+    _inject = "<script>try{localStorage.setItem('rocket_access_key','local');sessionStorage.setItem('rocket_access_key','local')}catch(e){}</script>"
 
     @app.get("/", include_in_schema=False)
     def _index():

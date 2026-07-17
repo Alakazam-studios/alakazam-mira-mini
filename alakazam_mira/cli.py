@@ -40,6 +40,8 @@ def main() -> None:
     play.add_argument("--steps", type=int, default=None,
                       help="override default diffusion steps (else the lobby preset decides)")
     play.add_argument("--no-browser", action="store_true")
+    play.add_argument("--no-fast", action="store_true",
+                      help="disable the Apple fast stack (MLX + Core ML) and run plain torch")
     args = ap.parse_args()
     if args.cmd != "play":
         ap.print_help()
@@ -61,7 +63,7 @@ def main() -> None:
     torch.compile = _no_compile  # type: ignore[assignment]
 
     device = _pick_device()
-    if device == "cpu":
+    if device == "cpu" and os.environ.get("MIRA_BACKEND") != "mlx":
         print("[mira-mini] no GPU found (need CUDA or Apple silicon); CPU generation is too slow to play. Aborting.")
         print("       Override with MIRA_DEVICE=cpu to run anyway.")
         sys.exit(2)
@@ -71,14 +73,49 @@ def main() -> None:
     repo = resolve_repo(args.model, device)
     size = "~5 GB" if repo.endswith("364m") else "~12 GB"
     first_run = not bundle_ready(CACHE / "bundle")
+
+    DIM, BOLD, RESET = "\033[2m", "\033[1m", "\033[0m"
+    ORANGE, GREEN = "\033[38;5;208m", "\033[32m"
+    def line(icon, text):
+        print(f"  {icon} {text}", flush=True)
     print()
-    print("  mira-mini: MIRA Mini, a neural world model of car soccer, running locally")
-    print(f"  device {device} · model {repo.split('/')[-1]}"
-          + (f" · first run downloads {size} of weights (once)" if first_run else " · weights cached"))
-    print("  weights are CC BY-NC-SA (non-commercial) · docs: https://alakazam.gg/mira-mini")
+    print(f"{ORANGE}{BOLD}  ▄▀█ MIRA MINI{RESET}  {DIM}a world model you can drive{RESET}")
+    print(f"{DIM}  every frame is generated · no game engine · CC BY-NC-SA weights · alakazam.gg/mira-mini{RESET}")
     print()
+    dev_label = {"mps": "Apple silicon (Metal)", "cuda": "CUDA GPU", "cpu": "CPU"}.get(device, device)
+    line("●", f"device   {BOLD}{dev_label}{RESET}")
+    line("●", f"model    {BOLD}{repo.split('/')[-1]}{RESET}"
+         + (f"  {DIM}first run downloads {size}, once{RESET}" if first_run else f"  {DIM}weights cached{RESET}"))
     bundle = ensure_weights(repo)
     ckpt = checkpoint_path(bundle)
+
+    # ---- Apple fast stack: wired automatically when the pieces are present ----
+    # (MLX carries the transformer on Metal, a Core ML package carries the
+    # decoder, torch keeps the CPU-side glue. Disable with --no-fast.)
+    fast = False
+    if (sys.platform == "darwin" and device == "mps" and not args.no_fast
+            and os.environ.get("MIRA_BACKEND") is None):
+        mlpkg = bundle / "decoder60k.mlpackage"
+        try:
+            import mlx.core  # noqa: F401
+            from coremltools.models import MLModel  # noqa: F401
+            have_fast = mlpkg.exists()
+        except Exception:
+            have_fast = False
+        if have_fast:
+            os.environ.setdefault("MIRA_BACKEND", "mlx")
+            os.environ["MIRA_DEVICE"] = "cpu"  # torch = glue only; MLX owns the GPU
+            os.environ.setdefault("MIRA_DECODER", f"coreml:{mlpkg}")
+            os.environ.setdefault("MIRA_DECODER_CU", "CPU_AND_GPU")
+            os.environ.setdefault("MIRA_DECODE_PIPELINE", "1")
+            os.environ.setdefault("MIRA_MLX_NO_RENOISE", "1")
+            os.environ.setdefault("MIRA_FRAME_INTERP", "1")
+            os.environ.setdefault("MIRA_WARMUP_STEPS", "8")
+            device = "cpu"
+            fast = True
+            line("●", f"backend  {BOLD}fast stack{RESET}  {DIM}MLX transformer + Core ML decoder + 2x display interpolation{RESET}")
+        else:
+            line("●", f"backend  torch on {device}  {DIM}(fast stack unavailable: needs mlx + coremltools + the 364m bundle){RESET}")
 
     # Engine env (read by mira_vm.engine / mira_vm.app at import).
     os.environ.setdefault("MIRA_CKPT", str(ckpt))
@@ -95,6 +132,9 @@ def main() -> None:
     engine_port = args.port + 1
     os.environ["MIRA_MODAL_URL"] = f"ws://127.0.0.1:{engine_port}/ws"
 
+    import logging as _logging
+    for noisy in ("httpx", "uvicorn.access"):
+        _logging.getLogger(noisy).setLevel(_logging.WARNING)
     import uvicorn
 
     from .local_app import build_app
@@ -108,13 +148,51 @@ def main() -> None:
     threading.Thread(target=eng_server.run, daemon=True, name="mira-engine").start()
 
     app = build_app()
-    url = f"http://127.0.0.1:{args.port}/?view=rocket"
-    print(f"[mira-mini] playing at {url}")
-    print("[mira-mini] drive with WASD · Space toggles ball-cam · full controls in the player")
-    if not args.no_browser:
-        threading.Thread(
-            target=lambda: (time.sleep(1.5), webbrowser.open(url)), daemon=True
-        ).start()
+    url = f"http://127.0.0.1:{args.port}/?view=rocket&key=local"
+
+    # Loading watcher: poll the engine's healthz, keep the human company while
+    # 364M parameters wake up, open the browser only when the model is READY
+    # (no more staring at a black canvas).
+    def _watch_and_open():
+        import json as _json
+        import urllib.request as _rq
+        quips = [
+            "convincing 364 million parameters it's game day…",
+            "teaching the ball object permanence…",
+            "negotiating the laws of physics (they drive a hard bargain)…",
+            "compiling dreams for your GPU…",
+            "the referee is a neural net too; do not argue with it…",
+        ]
+        t0 = time.time(); qi = 0; last_quip = 0.0
+        while True:
+            time.sleep(0.4)
+            waited = time.time() - t0
+            try:
+                with _rq.urlopen(f"http://127.0.0.1:{engine_port}/healthz", timeout=2) as r:
+                    h = _json.load(r)
+            except Exception:
+                h = {}
+            if h.get("load_error"):
+                print(f"  ✗ engine failed: {h['load_error']}", flush=True)
+                return
+            if h.get("ready"):
+                print(f"  \033[32m●\033[0m engine   \033[1mready in {waited:.0f}s\033[0m")
+                print()
+                print(f"  \033[1m▶ {url}\033[0m")
+                print("    drive with WASD · Space toggles ball-cam · Ctrl-C here to quit")
+                print()
+                if not args.no_browser:
+                    webbrowser.open(url)
+                return
+            if waited - last_quip > 9 and qi < len(quips):
+                print(f"  \033[2m  {quips[qi]}\033[0m", flush=True)
+                qi += 1; last_quip = waited
+            if waited > 300:
+                print("  ✗ engine took >5 min; something is wrong (check RAM, then rerun)")
+                return
+
+    print("  ● engine   loading…  \033[2m(~30 s on Apple silicon; watch this space)\033[0m", flush=True)
+    threading.Thread(target=_watch_and_open, daemon=True, name="load-watcher").start()
     uvicorn.run(app, host="127.0.0.1", port=args.port, log_level="warning")
 
 
