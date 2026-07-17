@@ -79,7 +79,12 @@ def main() -> None:
     def line(icon, text):
         print(f"  {icon} {text}", flush=True)
     print()
-    print(f"{ORANGE}{BOLD}  ▄▀█ MIRA MINI{RESET}  {DIM}a world model you can drive{RESET}")
+    try:
+        from importlib.metadata import version as _pkg_version
+        _ver = "v" + _pkg_version("alakazam-mira-mini")
+    except Exception:
+        _ver = ""
+    print(f"{ORANGE}{BOLD}  ▄▀█ MIRA MINI{RESET} {DIM}{_ver}{RESET}  {DIM}a world model you can drive{RESET}")
     print(f"{DIM}  every frame is generated · no game engine · CC BY-NC-SA weights · alakazam.gg/mira-mini{RESET}")
     print()
     dev_label = {"mps": "Apple silicon (Metal)", "cuda": "CUDA GPU", "cpu": "CPU"}.get(device, device)

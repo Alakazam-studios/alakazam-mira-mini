@@ -90,3 +90,7 @@ The play URL is a clickable terminal hyperlink (OSC 8).
 ## 0.1.8
 
 The room start handshake retries with backoff instead of failing once when the engine slot is briefly held by a previous session or an idle-closed socket.
+
+## 0.1.9
+
+The banner shows the installed version.
