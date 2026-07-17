@@ -13,7 +13,9 @@ MIRA Mini is our from-scratch reproduction of the MIRA recipe
 ([General Intuition](https://www.generalintuition.com/) × [Kyutai](https://kyutai.org/),
 with Epic Games), compressed until it runs on consumer hardware: fewer diffusion steps,
 a smaller student model, and a compact decoder. Measurements and method are in the
-[technical report](https://alakazam.gg/mira-mini).
+[technical report](https://alakazam.gg/mira-mini); the physics-verification results
+behind the compression claims are summarized in
+[docs/physics_verification.md](docs/physics_verification.md).
 
 ## What you need
 
