@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "alakazam-mira-mini"
-version = "0.1.10"
+version = "0.1.11"
 description = "Play MIRA Mini, a neural world model of car soccer, locally on your own GPU (CUDA or Apple silicon)."
 readme = "README.md"
 requires-python = ">=3.10"

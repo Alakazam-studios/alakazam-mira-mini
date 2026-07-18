@@ -40,6 +40,9 @@ def main() -> None:
     play.add_argument("--steps", type=int, default=None,
                       help="override default diffusion steps (else the lobby preset decides)")
     play.add_argument("--no-browser", action="store_true")
+    play.add_argument("--interp", action="store_true",
+                      help="2x display interpolation: interleave blend midpoints between "
+                           "real frames (doubles displayed fps; world steps unchanged)")
     play.add_argument("--no-fast", action="store_true",
                       help="disable the Apple fast stack (MLX + Core ML) and run plain torch")
     play.add_argument("--verbose", action="store_true",
@@ -116,11 +119,13 @@ def main() -> None:
             os.environ.setdefault("MIRA_DECODER_CU", "CPU_AND_GPU")
             os.environ.setdefault("MIRA_DECODE_PIPELINE", "1")
             os.environ.setdefault("MIRA_MLX_NO_RENOISE", "1")
-            os.environ.setdefault("MIRA_FRAME_INTERP", "1")
+            if args.interp:
+                os.environ.setdefault("MIRA_FRAME_INTERP", "1")
             os.environ.setdefault("MIRA_WARMUP_STEPS", "8")
             device = "cpu"
             fast = True
-            line("●", f"backend  {BOLD}fast stack{RESET}  {DIM}MLX transformer + Core ML decoder + 2x display interpolation{RESET}")
+            _interp_note = " + 2x display interpolation" if os.environ.get("MIRA_FRAME_INTERP") == "1" else ""
+            line("●", f"backend  {BOLD}fast stack{RESET}  {DIM}MLX transformer + Core ML decoder{_interp_note}{RESET}")
         else:
             line("●", f"backend  torch on {device}  {DIM}(fast stack unavailable: needs mlx + coremltools + the 364m bundle){RESET}")
 

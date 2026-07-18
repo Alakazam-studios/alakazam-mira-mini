@@ -9,6 +9,8 @@ pip install alakazam-mira-mini
 mira-mini play
 ```
 
+Useful flags: `--interp` (2x display interpolation), `--steps N`, `--no-fast`, `--verbose`.
+
 MIRA Mini is our from-scratch reproduction of the MIRA recipe
 ([General Intuition](https://www.generalintuition.com/) × [Kyutai](https://kyutai.org/),
 with Epic Games), compressed until it runs on consumer hardware: fewer diffusion steps,
